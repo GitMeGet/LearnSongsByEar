@@ -1,7 +1,6 @@
 import React from 'react';
-import ReactDOM from "react-dom";
-import logo from './logo.svg';
 import './App.css';
+import Dropzone from 'react-dropzone'
 
 const campfireStory = "With Or Without You.mp3";
 const bootingUp = "Who'll Stop The Rain.mp3";
@@ -14,7 +13,7 @@ function getTime(time) {
   }
 }
 
-class App extends React.Component {
+class App extends React.Component {    
   state = {
     selectedTrack: null,
     player: "stopped",
@@ -70,6 +69,17 @@ class App extends React.Component {
     }
   }
 
+  onDrop = (acceptedFiles) => {
+    console.log(acceptedFiles);
+    var reader = new FileReader();
+    reader.onload = () => {
+      // Do whatever you want with the file contents
+      const binaryStr = reader.result
+      console.log(binaryStr)
+    }
+    acceptedFiles.forEach(acceptedFiles => reader.readAsBinaryString(acceptedFiles))
+  }
+  
   render() {
     const list = [
       { id: 1, title: "Campfire Story" },
@@ -118,7 +128,18 @@ class App extends React.Component {
         ) : (
           ""
         )}
+        
         <audio ref={ref => (this.player = ref)} />
+        
+        <Dropzone onDrop={this.onDrop}>
+          {({getRootProps, getInputProps, isDragActive}) => (
+            <div {...getRootProps()}>
+              <input {...getInputProps()} />
+              {isDragActive ? "Drop it like it's hot!" : 'Click me or drag a file to upload!'}
+            </div>
+          )}
+        </Dropzone>
+       
       </>
     );
   }
