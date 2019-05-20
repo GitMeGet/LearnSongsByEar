@@ -127,13 +127,11 @@ class App extends React.Component {
     reader.readAsArrayBuffer(acceptedFile)
     
     // save file to indexedDB
-    var transaction = db.transaction(["store"], "readwrite");
-    var objectStore = transaction.objectStore("store");
-    var request = objectStore.add(acceptedFile);
-    request.onsuccess = function(event) {
+    db.transaction(["store"], "readwrite").objectStore("store").add(acceptedFile).onsuccess = function(event) {
       console.log("save to db success");
     };
     
+    // get file from indexedDB
     db.transaction("store").objectStore("store").get("Who'll Stop The Rain.mp3").onsuccess = function(event) {
       alert("Name for Who'll Stop The Rain.mp3 is " + event.target.result.name);
     };   
