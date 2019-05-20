@@ -13,6 +13,18 @@ function getTime(time) {
   }
 }
 
+function playSound(arraybuffer) {
+  window.AudioContext = window.AudioContext || window.webkitAudioContext;
+  var context = new window.AudioContext();
+  var source;
+  context.decodeAudioData(arraybuffer, function (buf) {
+    source = context.createBufferSource();
+    source.connect(context.destination);
+    source.buffer = buf;
+    source.start(0);
+  });
+}
+
 class App extends React.Component {    
   state = {
     selectedTrack: null,
@@ -72,12 +84,20 @@ class App extends React.Component {
   onDrop = (acceptedFiles) => {
     console.log(acceptedFiles);
     var reader = new FileReader();
+    /*
     reader.onload = () => {
       // Do whatever you want with the file contents
       const binaryStr = reader.result
       console.log(binaryStr)
     }
     acceptedFiles.forEach(acceptedFiles => reader.readAsBinaryString(acceptedFiles))
+    */
+
+    reader.onload = function (e) {
+        console.log(e.target.result);
+        playSound(e.target.result);
+    }
+    acceptedFiles.forEach(acceptedFiles => reader.readAsArrayBuffer(acceptedFiles))
   }
   
   render() {
@@ -131,6 +151,7 @@ class App extends React.Component {
         
         <audio ref={ref => (this.player = ref)} />
         
+        // TODO: add accept=, maxSize= props
         <Dropzone onDrop={this.onDrop}>
           {({getRootProps, getInputProps, isDragActive}) => (
             <div {...getRootProps()}>
