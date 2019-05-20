@@ -4,6 +4,7 @@ import Dropzone from 'react-dropzone'
 
 const campfireStory = "With Or Without You.mp3";
 const bootingUp = "Who'll Stop The Rain.mp3";
+var db;
 
 function getTime(time) {
   if (!isNaN(time)) {
@@ -25,6 +26,28 @@ function playSound(arraybuffer) {
   });
 }
 
+function initDB() {
+  if (!('indexedDB' in window)) {
+    console.log('This browser doesn\'t support IndexedDB');
+    return;
+  }
+    
+  var request = indexedDB.open("MyTestDatabase");
+  request.onerror = function(event) {
+    alert("Why didn't you allow my web app to use IndexedDB?!");
+  };
+  request.onsuccess = function(event) {
+    db = event.target.result;
+  };
+  request.onupgradeneeded = function(event) { 
+    var db = event.target.result;
+    alert('running onupgradeneeded');
+    if (!db.objectStoreNames.contains('store')) {
+      var storeOS = db.createObjectStore('store', {keyPath: 'name'});
+    }
+  };
+}
+
 class App extends React.Component {    
   state = {
     selectedTrack: null,
@@ -40,6 +63,8 @@ class App extends React.Component {
         duration: e.target.duration
       });
     });
+
+    initDB();
   }
 
   componentWillUnmount() {
@@ -97,7 +122,21 @@ class App extends React.Component {
         console.log(e.target.result);
         playSound(e.target.result);
     }
-    acceptedFiles.forEach(acceptedFiles => reader.readAsArrayBuffer(acceptedFiles))
+    //acceptedFiles.forEach(acceptedFiles => reader.readAsArrayBuffer(acceptedFiles))
+    var acceptedFile = acceptedFiles[0]
+    reader.readAsArrayBuffer(acceptedFile)
+    
+    // save file to indexedDB
+    var transaction = db.transaction(["store"], "readwrite");
+    var objectStore = transaction.objectStore("store");
+    var request = objectStore.add(acceptedFile);
+    request.onsuccess = function(event) {
+      console.log("save to db success");
+    };
+    
+    db.transaction("store").objectStore("store").get("Who'll Stop The Rain.mp3").onsuccess = function(event) {
+      alert("Name for Who'll Stop The Rain.mp3 is " + event.target.result.name);
+    };   
   }
   
   render() {
