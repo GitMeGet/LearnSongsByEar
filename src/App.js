@@ -48,6 +48,21 @@ function initDB() {
   };
 }
 
+function arrayBufferToBlob(buffer, type) {
+  return new Blob([buffer], {type: type});
+}
+
+function blobToArrayBuffer(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener('loadend', (e) => {
+      resolve(reader.result);
+    });
+    reader.addEventListener('error', reject);
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 class App extends React.Component {    
   state = {
     selectedTrack: null,
@@ -120,21 +135,29 @@ class App extends React.Component {
 
     reader.onload = function (e) {
         console.log(e.target.result);
-        playSound(e.target.result);
+        //playSound(e.target.result);
     }
     //acceptedFiles.forEach(acceptedFiles => reader.readAsArrayBuffer(acceptedFiles))
     var acceptedFile = acceptedFiles[0]
     reader.readAsArrayBuffer(acceptedFile)
     
     // save file to indexedDB
-    db.transaction(["store"], "readwrite").objectStore("store").add(acceptedFile).onsuccess = function(event) {
+    // objectStore add() vs put() [updates existing record]
+    db.transaction(["store"], "readwrite").objectStore("store").put(arrayBufferToBlob(acceptedFile)).onsuccess = function(event) {
       console.log("save to db success");
     };
     
-    // get file from indexedDB
+    var soundFile;
+    // get file from indexedDB and store as var
     db.transaction("store").objectStore("store").get("Who'll Stop The Rain.mp3").onsuccess = function(event) {
       alert("Name for Who'll Stop The Rain.mp3 is " + event.target.result.name);
-    };   
+      
+      // what type is soundFile when retrieved from db?
+      soundFile = event.target.result;
+    };
+    
+    
+    playSound(blobToArrayBuffer(soundFile));
   }
   
   render() {
