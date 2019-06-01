@@ -1,6 +1,7 @@
 import React from 'react';
 import './App.css';
 import Dropzone from 'react-dropzone'
+import localforage from 'localforage'
 
 const campfireStory = "With Or Without You.mp3";
 const bootingUp = "Who'll Stop The Rain.mp3";
@@ -26,43 +27,6 @@ function playSound(arraybuffer) {
   });
 }
 
-function initDB() {
-  if (!('indexedDB' in window)) {
-    console.log('This browser doesn\'t support IndexedDB');
-    return;
-  }
-    
-  var request = indexedDB.open("MyTestDatabase");
-  request.onerror = function(event) {
-    alert("Why didn't you allow my web app to use IndexedDB?!");
-  };
-  request.onsuccess = function(event) {
-    db = event.target.result;
-  };
-  request.onupgradeneeded = function(event) { 
-    var db = event.target.result;
-    alert('running onupgradeneeded');
-    if (!db.objectStoreNames.contains('store')) {
-      var storeOS = db.createObjectStore('store', {keyPath: 'name'});
-    }
-  };
-}
-
-function arrayBufferToBlob(buffer, type) {
-  return new Blob([buffer], {type: type});
-}
-
-function blobToArrayBuffer(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener('loadend', (e) => {
-      resolve(reader.result);
-    });
-    reader.addEventListener('error', reject);
-    reader.readAsArrayBuffer(blob);
-  });
-}
-
 class App extends React.Component {    
   state = {
     selectedTrack: null,
@@ -78,8 +42,6 @@ class App extends React.Component {
         duration: e.target.duration
       });
     });
-
-    initDB();
   }
 
   componentWillUnmount() {
@@ -124,40 +86,23 @@ class App extends React.Component {
   onDrop = (acceptedFiles) => {
     console.log(acceptedFiles);
     var reader = new FileReader();
-    /*
-    reader.onload = () => {
-      // Do whatever you want with the file contents
-      const binaryStr = reader.result
-      console.log(binaryStr)
-    }
-    acceptedFiles.forEach(acceptedFiles => reader.readAsBinaryString(acceptedFiles))
-    */
 
     reader.onload = function (e) {
         console.log(e.target.result);
         //playSound(e.target.result);
+        
+        localforage.setItem('key', e.target.result).then(function () {
+          return localforage.getItem('key');
+        }).then(function (value) {
+            alert("yay")
+            playSound(value)
+          }
+        ).catch(function (err) {
+          alert("boo")
+        }); 
     }
-    //acceptedFiles.forEach(acceptedFiles => reader.readAsArrayBuffer(acceptedFiles))
     var acceptedFile = acceptedFiles[0]
     reader.readAsArrayBuffer(acceptedFile)
-    
-    // save file to indexedDB
-    // objectStore add() vs put() [updates existing record]
-    db.transaction(["store"], "readwrite").objectStore("store").put(arrayBufferToBlob(acceptedFile)).onsuccess = function(event) {
-      console.log("save to db success");
-    };
-    
-    var soundFile;
-    // get file from indexedDB and store as var
-    db.transaction("store").objectStore("store").get("Who'll Stop The Rain.mp3").onsuccess = function(event) {
-      alert("Name for Who'll Stop The Rain.mp3 is " + event.target.result.name);
-      
-      // what type is soundFile when retrieved from db?
-      soundFile = event.target.result;
-    };
-    
-    
-    playSound(blobToArrayBuffer(soundFile));
   }
   
   render() {
@@ -221,6 +166,7 @@ class App extends React.Component {
           )}
         </Dropzone>
        
+        <script src="localforage/dist/localforage.js"></script>
       </>
     );
   }
